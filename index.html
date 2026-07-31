@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataToForm AI — Prototype SaaS Brasseries</title>
+<style>
+  :root{
+    --ink:#3B3F7B; --accent:#5742DE; --accentd:#4534B0;
+    --lav:#F3F2FB; --lav2:#EEEDFB; --lav3:#F0EFFC;
+    --line:#E4E3F2; --muted:#6B6A85; --white:#fff; --bg:#F7F7FB;
+    --ok:#1F9D74; --okbg:#E7F6EF; --teal:#1FA6B8;
+    --ink-soft:#5B5F97;
+    --shadow:0 1px 2px rgba(59,63,123,.06), 0 8px 24px rgba(59,63,123,.06);
+    --r:14px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--font); color:#23233a; background:var(--bg); font-size:14px; line-height:1.45;}
+  a{color:inherit;text-decoration:none}
+  .app{display:flex; min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{width:244px; background:var(--ink); color:#EDECFB; display:flex; flex-direction:column; padding:20px 14px; position:sticky; top:0; height:100vh;}
+  .brand{display:flex; flex-direction:column; gap:2px; padding:6px 10px 18px;}
+  .brand b{font-size:17px; color:#fff; letter-spacing:.2px}
+  .brand span{font-size:11px; color:#BCBAEB; letter-spacing:.6px; text-transform:uppercase}
+  .nav{display:flex; flex-direction:column; gap:3px; margin-top:6px}
+  .nav button{display:flex; align-items:center; gap:11px; width:100%; border:0; background:transparent; color:#D9D8F3; padding:10px 12px; border-radius:10px; cursor:pointer; font-size:13.5px; font-family:inherit; text-align:left;}
+  .nav button:hover{background:rgba(255,255,255,.08); color:#fff}
+  .nav button.active{background:var(--accent); color:#fff; font-weight:600}
+  .nav button svg{width:18px;height:18px;flex:0 0 18px;stroke-width:1.9}
+  .nav .sep{margin:12px 10px 6px; font-size:10.5px; letter-spacing:.7px; text-transform:uppercase; color:#8f8ecb}
+  .side-foot{margin-top:auto; padding:12px 10px 2px; font-size:11px; color:#9998d6; border-top:1px solid rgba(255,255,255,.1)}
+
+  /* Main */
+  .main{flex:1; min-width:0; display:flex; flex-direction:column}
+  .topbar{height:62px; background:var(--white); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; padding:0 26px; position:sticky; top:0; z-index:5}
+  .topbar h1{font-size:18px; margin:0; font-weight:700; color:var(--ink)}
+  .brewery{margin-left:6px; display:flex; align-items:center; gap:8px; background:var(--lav); border:1px solid var(--line); padding:6px 11px; border-radius:999px; font-size:12.5px; color:var(--ink); font-weight:600}
+  .brewery .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .spacer{flex:1}
+  .demo-badge{font-size:11px; font-weight:800; letter-spacing:.4px; color:#fff; background:#F97316; border:1px solid #E4620A; padding:6px 12px; border-radius:999px; box-shadow:0 2px 8px rgba(249,115,22,.35)}
+  .brand.demo{background:#F97316; border-radius:12px; padding:11px 13px 10px; margin-bottom:10px; box-shadow:0 4px 16px rgba(249,115,22,.4)}
+  .brand.demo b{color:#fff; font-size:16px}
+  .brand.demo span{color:#FFE3C9; text-transform:none; letter-spacing:.2px; font-size:11px; font-weight:700}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--ink)); color:#fff; display:grid; place-items:center; font-weight:700; font-size:13px}
+
+  .screen{display:none; padding:26px; animation:fade .25s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+  .screen-head{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px; gap:12px; flex-wrap:wrap}
+  .screen-head p{margin:4px 0 0; color:var(--muted); font-size:13px}
+  .eyebrow{font-size:11px; letter-spacing:.8px; text-transform:uppercase; color:var(--accent); font-weight:700}
+
+  /* Reusable */
+  .grid{display:grid; gap:16px}
+  .cards-4{grid-template-columns:repeat(4,1fr)}
+  .cards-3{grid-template-columns:repeat(3,1fr)}
+  .cards-2{grid-template-columns:1.6fr 1fr}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:var(--r); padding:18px; box-shadow:var(--shadow)}
+  .card h3{margin:0 0 2px; font-size:14px; color:var(--ink)}
+  .card .sub{color:var(--muted); font-size:12px; margin-bottom:14px}
+  .kpi .label{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px}
+  .kpi .val{font-size:30px; font-weight:800; color:var(--ink); margin-top:8px; letter-spacing:-.5px}
+  .kpi .delta{font-size:12px; margin-top:6px; color:var(--ok); font-weight:600}
+  .kpi .delta.flat{color:var(--muted)}
+  .ico-pill{width:34px;height:34px;border-radius:9px;background:var(--lav); display:grid;place-items:center; color:var(--accent)}
+  .kpi .top{display:flex; justify-content:space-between; align-items:flex-start}
+
+  .btn{border:0; border-radius:10px; padding:10px 15px; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; gap:8px}
+  .btn.primary{background:var(--accent); color:#fff}
+  .btn.primary:hover{background:var(--accentd)}
+  .btn.ghost{background:var(--lav); color:var(--ink); border:1px solid var(--line)}
+  .btn.ghost:hover{background:var(--lav2)}
+  .btn svg{width:16px;height:16px;stroke-width:2}
+
+  table{width:100%; border-collapse:collapse}
+  th{ text-align:left; font-size:11px; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); font-weight:700; padding:10px 12px; border-bottom:1px solid var(--line)}
+  td{padding:12px; border-bottom:1px solid #F0EFF7; font-size:13px}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--lav3)}
+  .tag{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background:var(--lav2); color:var(--accentd)}
+  .tag.green{background:var(--okbg); color:var(--ok)}
+  .tag.teal{background:#E4F5F8; color:#128293}
+  .tag.grey{background:#EEEEF4; color:#6B6A85}
+  .muted{color:var(--muted)}
+  .right{text-align:right}
+
+  /* bars */
+  .bars{display:flex; align-items:stretch; gap:14px; height:180px}
+  .bars .col{flex:1; display:flex; flex-direction:column; min-width:0}
+  .bars .track{flex:1; display:flex; gap:6px; align-items:flex-end; justify-content:center}
+  .bars .bar{width:34%; min-height:4px; border-radius:7px 7px 3px 3px; background:linear-gradient(180deg,var(--accent),#8B7FE8)}
+  .bars .bar.alt{background:linear-gradient(180deg,var(--ink),#5B5F97)}
+  .bars .m{text-align:center; font-size:11px; color:var(--muted); padding-top:8px}
+  .legend{display:flex; gap:16px; font-size:12px; color:var(--muted); margin-top:6px}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px}
+  .field label{font-size:12.5px; font-weight:600; color:var(--ink)}
+  .field small{color:var(--muted); font-weight:400; font-size:11.5px}
+  select,input[type=text],input[type=email],textarea{font-family:inherit; font-size:13px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:#23233a; width:100%}
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+
+  /* drawer */
+  .drawer-back{position:fixed; inset:0; background:rgba(35,35,58,.32); display:none; z-index:20}
+  .drawer-back.open{display:block}
+  .drawer{position:fixed; top:0; right:-460px; width:440px; max-width:92vw; height:100vh; background:#fff; box-shadow:-12px 0 40px rgba(35,35,58,.18); transition:right .28s cubic-bezier(.4,.14,.2,1); z-index:21; display:flex; flex-direction:column}
+  .drawer.open{right:0}
+  .drawer .dh{padding:20px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:var(--ink); color:#fff}
+  .drawer .dh b{font-size:16px}
+  .drawer .db{padding:22px; overflow:auto}
+  .x{cursor:pointer; border:0; background:rgba(255,255,255,.14); color:#fff; width:30px;height:30px;border-radius:8px; font-size:16px}
+  .kv{display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid #F0EFF7; font-size:13px}
+  .kv span:first-child{color:var(--muted)}
+  .kv b{color:var(--ink)}
+  .timeline{margin-top:8px}
+  .timeline .t{position:relative; padding:0 0 14px 20px; border-left:2px solid var(--lav2)}
+  .timeline .t:before{content:''; position:absolute; left:-6px; top:2px; width:10px;height:10px;border-radius:50%; background:var(--accent)}
+  .timeline .t small{color:var(--muted)}
+
+  /* QR */
+  .qr{width:150px;height:150px;display:grid; grid-template-columns:repeat(21,1fr); grid-template-rows:repeat(21,1fr); border:8px solid #fff; box-shadow:var(--shadow); border-radius:8px; background:#fff}
+  .qr i{background:var(--ink)}
+  .qr i.off{background:transparent}
+
+  /* toast */
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:13px 20px; border-radius:12px; box-shadow:0 12px 34px rgba(35,35,58,.3); font-size:13.5px; font-weight:600; opacity:0; pointer-events:none; transition:.3s; z-index:40; display:flex; gap:10px; align-items:center}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast .ck{width:20px;height:20px;border-radius:50%;background:var(--ok); display:grid;place-items:center}
+
+  .modal-back{position:fixed; inset:0; background:rgba(35,35,58,.34); display:none; z-index:30}
+  .modal-back.open{display:block}
+  .modal{position:fixed; z-index:31; top:50%; left:50%; transform:translate(-50%,-48%); width:470px; max-width:94vw; background:#fff; border-radius:16px; box-shadow:0 24px 60px rgba(35,35,58,.3); display:none; overflow:hidden}
+  .modal.open{display:block}
+  .modal .mh{background:var(--ink); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center}
+  .modal .mh b{font-size:16px}
+  .modal .mb{padding:20px 20px 6px}
+  .modal .mf{padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px}
+
+  /* toggles */
+  .switch{position:relative; width:42px; height:24px; flex:0 0 42px}
+  .switch input{display:none}
+  .slider{position:absolute; inset:0; background:#D7D6EA; border-radius:999px; transition:.2s; cursor:pointer}
+  .slider:before{content:''; position:absolute; width:18px;height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .switch input:checked + .slider{background:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(18px)}
+  .opt{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #F0EFF7}
+  .opt b{font-size:13px; color:var(--ink)} .opt small{color:var(--muted)}
+
+  /* reward chips */
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+  .chip{border:1px dashed var(--accent); color:var(--accentd); border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:600; background:var(--lav3); cursor:pointer}
+  .chip.active{background:var(--accent); color:#fff; border-style:solid}
+
+  /* phone / landing */
+  .phone-wrap{display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start}
+  .phone{width:330px; background:#111; border-radius:38px; padding:12px; box-shadow:0 24px 60px rgba(35,35,58,.28); flex:0 0 auto}
+  .phone .screen2{background:#fff; border-radius:28px; overflow:hidden; height:640px; display:flex; flex-direction:column}
+  .ph-hero{background:linear-gradient(150deg,var(--ink),var(--accent)); color:#fff; padding:22px 20px 20px}
+  .ph-hero .kick{font-size:11px; letter-spacing:.8px; text-transform:uppercase; color:#CFCDEF}
+  .ph-hero h2{margin:6px 0 3px; font-size:22px}
+  .ph-hero p{margin:0; color:#E6E4FA; font-size:12.5px}
+  .ph-body{padding:18px 20px; overflow:auto; flex:1}
+  .ph-body h4{margin:0 0 4px; color:var(--ink); font-size:14px}
+  .bottle{display:flex; gap:12px; align-items:center; background:var(--lav); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:16px}
+  .bottle .b-ico{width:44px;height:44px;border-radius:10px;background:#fff;border:1px solid var(--line); display:grid;place-items:center; font-size:22px}
+  .ph-field{margin-bottom:12px}
+  .ph-field label{font-size:12px; font-weight:600; color:var(--ink); display:block; margin-bottom:5px}
+  .ph-opt{display:flex; gap:9px; align-items:flex-start; margin-bottom:9px; font-size:12px; color:#444}
+  .ph-opt input{margin-top:2px}
+  .ph-cta{width:100%; border:0; background:var(--accent); color:#fff; padding:13px; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit}
+  .ph-cta:hover{background:var(--accentd)}
+  .ph-success{display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 24px; flex:1}
+  .ph-success .big{width:64px;height:64px;border-radius:50%; background:var(--okbg); color:var(--ok); display:grid;place-items:center; margin-bottom:14px}
+  .flow-note{max-width:340px}
+  .flow-note .step{display:flex; gap:12px; margin-bottom:16px}
+  .flow-note .n{flex:0 0 26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:grid;place-items:center; font-weight:700; font-size:12px}
+  .flow-note b{color:var(--ink)}
+
+  @media (max-width:1080px){ .cards-4{grid-template-columns:repeat(2,1fr)} .cards-2{grid-template-columns:1fr} }
+  @media (max-width:760px){ .sidebar{display:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand demo"><b>Démo SaaS Brasseries</b><span>Données fictives · SaaS statique</span></div>
+    <nav class="nav" id="nav">
+      <button data-s="dash" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Tableau de bord</button>
+      <button data-s="clients"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 8.2a3 3 0 0 1 0 5.6"/><path d="M18 20a5 5 0 0 0-3-4.6"/></svg>Base client</button>
+      <button data-s="products"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>Produits</button>
+      <button data-s="qr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M20 14v0M17 20h4M20 17v4"/></svg>QR Codes</button>
+      <button data-s="editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Personnaliser la landing</button>
+      <button data-s="campaigns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l18-7-7 18-2.5-7.5L3 11z"/></svg>Campagnes</button>
+      <button data-s="loyalty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s-7-4.3-9.3-8.2C1 9.5 2.4 6 5.8 6c2 0 3.2 1.2 4.2 2.6C11 7.2 12.2 6 14.2 6c3.4 0 4.8 3.5 3.1 6.8C19 16.7 12 21 12 21z"/></svg>Fidélité</button>
+      <div class="sep">Côté consommateur</div>
+      <button data-s="landing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Landing de scan</button>
+    </nav>
+    <div class="side-foot">Prototype de démonstration<br>Version 0.1 · données fictives</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <h1 id="pageTitle">Tableau de bord</h1>
+      <div class="brewery"><span class="dot"></span>Brasserie Nicolas Wicke</div>
+      <div class="spacer"></div>
+      <div class="demo-badge">DÉMO · données fictives</div>
+      <div class="avatar">VC</div>
+    </header>
+
+    <!-- DASHBOARD -->
+    <section class="screen active" id="dash">
+      <div class="screen-head">
+        <div><div class="eyebrow">Vue d'ensemble</div><h2 style="margin:2px 0 0;color:var(--ink)">Bonjour, voici votre semaine</h2><p>Ce qui se passe autour de vos bières, du taproom jusqu'aux linéaires.</p></div>
+        <button class="btn primary" onclick="go('campaigns')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l18-7-7 18-2.5-7.5L3 11z"/></svg>Lancer une campagne</button>
+      </div>
+      <div class="grid cards-4">
+        <div class="card kpi"><div class="top"><div class="label">Contacts connus</div><div class="ico-pill"><svg width="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/></svg></div></div><div class="val">1 248</div><div class="delta">+126 cette semaine</div></div>
+        <div class="card kpi"><div class="top"><div class="label">Scans QR</div><div class="ico-pill"><svg width="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div></div><div class="val">3 906</div><div class="delta">+312 cette semaine</div></div>
+        <div class="card kpi"><div class="top"><div class="label">Scan → inscription</div><div class="ico-pill"><svg width="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 12l5 5L20 6"/></svg></div></div><div class="val">34 %</div><div class="delta">+3 pts vs sem. dernière</div></div>
+        <div class="card kpi"><div class="top"><div class="label">Campagnes actives</div><div class="ico-pill"><svg width="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l18-7-7 18-2.5-7.5L3 11z"/></svg></div></div><div class="val">3</div><div class="delta flat">2 e-mail · 1 SMS</div></div>
+      </div>
+      <div class="grid cards-2" style="margin-top:16px">
+        <div class="card">
+          <h3>Acquisition de contacts</h3><div class="sub">Nouveaux contacts par canal, 6 dernières semaines</div>
+          <div class="bars" id="dashBars"></div>
+          <div class="legend"><span><i style="background:linear-gradient(180deg,var(--accent),#8B7FE8)"></i>Via QR (indirect)</span><span><i style="background:linear-gradient(180deg,var(--ink),#5B5F97)"></i>Via page fidélité (direct)</span></div>
+        </div>
+        <div class="card">
+          <h3>À faire aujourd'hui</h3><div class="sub">Suggestions basées sur vos données</div>
+          <div class="timeline">
+            <div class="t"><b>18 clients « en sommeil »</b><br><small>Aucun achat depuis 3 mois — relançables en 1 clic.</small></div>
+            <div class="t"><b>IPA Houblon Libre en tête des scans</b><br><small>+40 % ce mois — idéal pour une préco.</small></div>
+            <div class="t"><b>Nouveau segment « Amateurs d'IPA »</b><br><small>92 contacts dont les scans sont majoritairement des IPA — déduit des produits scannés, sans qu'ils l'aient déclaré.</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section class="screen" id="clients">
+      <div class="screen-head">
+        <div><div class="eyebrow">CRM 360</div><h2 style="margin:2px 0 0;color:var(--ink)">Base client</h2><p>Chaque scan et chaque inscription enrichit une fiche unique. Cliquez une ligne pour l'ouvrir.</p></div>
+        <div class="row">
+          <select id="segFilter" style="width:200px" onchange="renderClients()">
+            <option value="">Tous les segments</option>
+            <option>Amateurs d'IPA</option><option>Clients taproom</option><option>Fidèles (5+ achats)</option><option>Découvreurs (1 achat)</option><option>En sommeil</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" style="padding:4px 4px 0">
+        <table><thead><tr><th>Client</th><th>Dernier produit</th><th>Segment</th><th class="right">Scans</th><th>Fidélité</th></tr></thead>
+        <tbody id="clientRows"></tbody></table>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="screen" id="products">
+      <div class="screen-head">
+        <div><div class="eyebrow">Catalogue</div><h2 style="margin:2px 0 0;color:var(--ink)">Base produits</h2><p>Vos bières sont déclarées ici. C'est cette base qui alimente les QR : chaque QR encode un produit (GTIN) et, en option, un lot ou une série.</p></div>
+        <button class="btn primary" onclick="openProd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>Ajouter un produit</button>
+      </div>
+      <div class="card" style="border-left:4px solid var(--accent); background:var(--lav3); margin-bottom:16px">
+        <h3>D'où viennent ces données ?</h3>
+        <p class="muted" style="margin:6px 0 0;font-size:12.5px;line-height:1.6">
+          <b style="color:var(--ink)">Le produit</b> (nom, format) est déclaré par la brasserie. &nbsp;·&nbsp;
+          <b style="color:var(--ink)">Le GTIN</b> provient de son inscription GS1 (le code-barres de la bouteille). &nbsp;·&nbsp;
+          <b style="color:var(--ink)">Le lot / la série</b> viennent de la production, pour les QR dynamiques. <br>
+          Sans GTIN, un identifiant interne est utilisé — <i>point à valider avec la brasserie (conformité GS1).</i>
+        </p>
+      </div>
+      <div class="card" style="padding:4px 4px 0">
+        <table><thead><tr><th>Produit</th><th>Format</th><th>GTIN</th><th>Dernier lot</th><th class="right">QR actifs</th><th>Statut</th></tr></thead>
+        <tbody id="prodRows">
+          <tr><td><b style="color:var(--ink)">IPA Houblon Libre</b></td><td>Bouteille 33 cl</td><td>3701234500017</td><td>L-2607-A</td><td class="right">2</td><td><span class="tag green">Actif</span></td></tr>
+          <tr><td><b style="color:var(--ink)">Blonde de Comptoir</b></td><td>Bouteille 75 cl</td><td>3701234500024</td><td>L-2606-C</td><td class="right">1</td><td><span class="tag green">Actif</span></td></tr>
+          <tr><td><b style="color:var(--ink)">Ambrée des Fûts</b></td><td>Fût 20 L</td><td>3701234500031</td><td>L-2605-B</td><td class="right">1</td><td><span class="tag green">Actif</span></td></tr>
+          <tr><td><b style="color:var(--ink)">Stout Minuit</b></td><td>Canette 44 cl</td><td><span class="muted">— (SKU interne)</span></td><td>—</td><td class="right">0</td><td><span class="tag grey">Sans GTIN</span></td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <!-- QR -->
+    <section class="screen" id="qr">
+      <div class="screen-head"><div><div class="eyebrow">Acquisition</div><h2 style="margin:2px 0 0;color:var(--ink)">QR Codes produits</h2><p>Générés et suivis depuis la plateforme. À imprimer sur vos étiquettes.</p></div></div>
+      <div class="grid cards-2">
+        <div class="card">
+          <h3>Générer un QR</h3><div class="sub">Il pointera vers la page de scan de votre choix.</div>
+          <div class="field"><label>Produit <small>· issu de votre base produits (GTIN + lot) — <a href="#" onclick="go('products');return false;" style="color:var(--accent);font-weight:600">gérer les produits</a></small></label>
+            <select id="qrProd"><option>IPA Houblon Libre</option><option>Blonde de Comptoir</option><option>Ambrée des Fûts</option><option>Stout Minuit (sans GTIN)</option></select></div>
+          <div class="field"><label>Objectif de la page</label>
+            <select id="qrGoal"><option>Inscription fidélité + page produit</option><option>Page produit seule</option><option>Jeu / tirage au sort</option></select></div>
+          <div class="field"><label>Campagne rattachée <small>(pour le suivi)</small></label>
+            <select id="qrCamp"><option>Été 2026 — Terrasses</option><option>Lancement IPA</option><option>Aucune</option></select></div>
+          <button class="btn primary" onclick="genQR()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>Générer le QR</button>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+          <div id="qrHolder" style="text-align:center;color:var(--muted)">
+            <div class="qr" id="qrGrid" style="opacity:.15"></div>
+            <div style="margin-top:12px;font-size:12.5px">Votre QR apparaîtra ici.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;padding:4px 4px 0">
+        <table><thead><tr><th>Produit</th><th>Campagne</th><th class="right">Scans</th><th class="right">Inscriptions</th><th>Support</th></tr></thead>
+        <tbody id="qrRows">
+          <tr><td>IPA Houblon Libre</td><td>Lancement IPA</td><td class="right">1 204</td><td class="right">438</td><td><span class="tag grey">Bouteille</span></td></tr>
+          <tr><td>Blonde de Comptoir</td><td>Été 2026 — Terrasses</td><td class="right">861</td><td class="right">252</td><td><span class="tag grey">Sous-bock</span></td></tr>
+          <tr><td>Ambrée des Fûts</td><td>—</td><td class="right">513</td><td class="right">120</td><td><span class="tag grey">Affiche</span></td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <!-- LOYALTY -->
+    <section class="screen" id="loyalty">
+      <div class="screen-head"><div><div class="eyebrow">Rétention</div><h2 style="margin:2px 0 0;color:var(--ink)">Programme de fidélité</h2><p>Réglez vos règles ; l'aperçu se met à jour à droite.</p></div>
+        <button class="btn primary" onclick="toast('Programme enregistré')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>Enregistrer</button>
+      </div>
+      <div class="grid cards-2">
+        <div class="card">
+          <h3>Règles</h3><div class="sub">Comment vos clients gagnent des points</div>
+          <div style="background:#FFF4E6; border:1px solid #FFD9A8; color:#9A5B00; border-radius:10px; padding:10px 12px; font-size:12px; margin-bottom:14px"><b>À définir :</b> le CDC liste les incitations (contenu exclusif, loterie, préventes, points, réductions) mais pas les seuils. Barème, paliers et récompenses restent à cadrer avec la brasserie — les valeurs ci-dessous sont indicatives.</div>
+          <div class="field"><label>1 point tous les</label>
+            <select id="ptRule" onchange="syncLoyalty()"><option>1 scan de bouteille</option><option>5 € d'achat</option><option>1 visite au taproom</option></select></div>
+          <div class="opt"><div><b>Palier « Club »</b><br><small>Débloqué à partir de X points</small></div>
+            <input type="text" id="tier" value="100" style="width:90px" oninput="syncLoyalty()"></div>
+          <div style="margin-top:6px"><b style="font-size:13px;color:var(--ink)">Récompenses proposées</b>
+            <div class="chips" id="rewards">
+              <div class="chip active" onclick="tog(this)">Contenu exclusif</div>
+              <div class="chip active" onclick="tog(this)">Réduction boutique</div>
+              <div class="chip" onclick="tog(this)">Accès prévente</div>
+              <div class="chip" onclick="tog(this)">Loterie</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="background:linear-gradient(160deg,var(--lav3),#fff)">
+          <h3>Aperçu carte membre</h3><div class="sub">Ce que voit le client (wallet)</div>
+          <div style="background:var(--ink); color:#fff; border-radius:16px; padding:20px; box-shadow:var(--shadow)">
+            <div style="font-size:11px;letter-spacing:.8px;color:#BCBAEB;text-transform:uppercase">Club · Nicolas Wicke</div>
+            <div style="font-size:20px;font-weight:800;margin:6px 0 2px">Camille Rousseau</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px">
+              <div><div style="font-size:11px;color:#CFCDEF">Points</div><div style="font-size:26px;font-weight:800" id="pvPoints">128</div></div>
+              <div style="text-align:right"><div style="font-size:11px;color:#CFCDEF">Palier</div><div style="font-weight:700" id="pvTier">Club débloqué</div></div>
+            </div>
+          </div>
+          <p class="muted" style="font-size:12px;margin-top:12px" id="pvRule">1 point par scan · Club à 100 pts</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- LANDING EDITOR -->
+    <section class="screen" id="editor">
+      <div class="screen-head">
+        <div><div class="eyebrow">Côté consommateur</div><h2 style="margin:2px 0 0;color:var(--ink)">Personnaliser la landing</h2><p>Réglez l'apparence et le contenu de la page de scan. L'aperçu à droite se met à jour en direct.</p></div>
+        <button class="btn primary" onclick="toast('Landing enregistrée')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>Enregistrer</button>
+      </div>
+      <div class="phone-wrap">
+        <div class="card" style="flex:1; min-width:320px; max-width:540px">
+          <h3>Apparence & contenu</h3><div class="sub">Ce que verra le consommateur après le scan.</div>
+          <div class="field"><label>Nom affiché</label><input type="text" id="edName" value="Brasserie Nicolas Wicke" oninput="applyEditor()"></div>
+          <div class="row" style="gap:16px">
+            <div class="field" style="flex:0 0 150px"><label>Couleur d'accent</label><input type="color" id="edColor" value="#5742DE" oninput="applyEditor()" style="height:42px;padding:4px"></div>
+            <div class="field" style="flex:1"><label>Contrepartie mise en avant</label><select id="edReward" onchange="applyEditor()"><option>Contenu exclusif</option><option>Réduction boutique</option><option>Accès prévente</option><option>Loterie</option></select></div>
+          </div>
+          <div class="field"><label>Titre d'accroche</label><input type="text" id="edTitle" value="Rejoignez le club et gagnez un cadeau" oninput="applyEditor()"></div>
+          <div class="field"><label>Message</label><textarea id="edMsg" rows="2" oninput="applyEditor()">Débloquez du contenu exclusif et des avantages. Sans installer d'application.</textarea></div>
+          <div class="field"><label>Opt-ins proposés</label>
+            <div class="opt"><div><b>Programme de fidélité</b><br><small>Toujours affiché</small></div><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></div>
+            <div class="opt"><div><b>Newsletter (e-mail)</b></div><label class="switch"><input type="checkbox" id="edN" checked onchange="applyEditor()"><span class="slider"></span></label></div>
+            <div class="opt"><div><b>Préventes (SMS)</b></div><label class="switch"><input type="checkbox" id="edS" onchange="applyEditor()"><span class="slider"></span></label></div>
+            <div class="opt"><div><b>Profilage marketing</b></div><label class="switch"><input type="checkbox" id="edP" onchange="applyEditor()"><span class="slider"></span></label></div>
+          </div>
+          <div style="background:var(--lav3);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:6px">
+            <b style="color:var(--ink)">Perso. avancée à venir :</b> adapter la page selon le produit, l'heure ou la géolocalisation (IA) — prévu en priorité 2 au CDC.
+          </div>
+        </div>
+        <div class="phone"><div class="screen2">
+          <div class="ph-hero" id="edHero"><div class="kick" id="edKick">Brasserie Nicolas Wicke</div><h2>IPA Houblon Libre</h2><p>Vous venez de scanner cette bière 🍺</p></div>
+          <div class="ph-body">
+            <div class="bottle"><div class="b-ico">🍾</div><div><h4 style="margin:0">IPA Houblon Libre</h4><small class="muted">33 cl · Citra & Mosaic · 6,2%</small></div></div>
+            <h4 id="edPvHead">Rejoignez le club et gagnez un cadeau</h4>
+            <p class="muted" id="edPvMsg" style="font-size:12px;margin:2px 0 10px">Débloquez du contenu exclusif et des avantages. Sans installer d'application.</p>
+            <div style="margin-bottom:12px"><span class="tag" id="edPvReward">🎁 Contenu exclusif</span></div>
+            <div class="ph-field"><label>Votre e-mail</label><input type="email" placeholder="prenom@email.com"></div>
+            <div class="ph-opt"><input type="checkbox" checked><div><b style="font-size:12.5px">Rejoindre le programme de fidélité</b></div></div>
+            <div class="ph-opt" id="edPvN"><input type="checkbox"><div>Recevoir les nouveautés et offres (e-mail)</div></div>
+            <div class="ph-opt" id="edPvS" style="display:none"><input type="checkbox"><div>Recevoir les préventes par SMS</div></div>
+            <div class="ph-opt" id="edPvP" style="display:none"><input type="checkbox"><div>Personnaliser mes recommandations</div></div>
+            <button class="ph-cta" id="edCta">Rejoindre le club</button>
+          </div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- CAMPAIGNS -->
+    <section class="screen" id="campaigns">
+      <div class="screen-head"><div><div class="eyebrow">Activation</div><h2 style="margin:2px 0 0;color:var(--ink)">Campagnes</h2><p>Touchez le bon segment, par SMS ou e-mail, depuis la plateforme.</p></div></div>
+      <div class="grid cards-2">
+        <div class="card">
+          <h3>Nouvelle campagne</h3><div class="sub">3 réglages, puis envoi.</div>
+          <div class="field"><label>Cible</label>
+            <select id="cSeg"><option>En sommeil (18 contacts)</option><option>Amateurs d'IPA (92)</option><option>Clients taproom (240)</option><option>Toute la base (1 248)</option></select></div>
+          <div class="field"><label>Canal</label>
+            <div class="row"><label class="row" style="gap:6px;font-weight:500"><input type="radio" name="chan" checked> E-mail</label>
+            <label class="row" style="gap:6px;font-weight:500"><input type="radio" name="chan"> SMS</label></div>
+            <small class="muted">Coût d'envoi estimé calculé automatiquement.</small></div>
+          <div class="field"><label>Message</label>
+            <textarea id="cMsg" rows="3">On vous a manqué ! -15% sur votre prochaine commande avec le code WICKE15 🍺</textarea></div>
+          <button class="btn primary" onclick="launch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l18-7-7 18-2.5-7.5L3 11z"/></svg>Lancer la campagne</button>
+        </div>
+        <div class="card" style="padding:4px 4px 0">
+          <div style="padding:14px 14px 0"><h3>Historique</h3><div class="sub">Performances récentes</div></div>
+          <table><thead><tr><th>Campagne</th><th>Canal</th><th class="right">Ouv.</th><th class="right">Ventes</th></tr></thead>
+          <tbody id="campRows">
+            <tr><td>Préventes Stout Minuit</td><td><span class="tag teal">E-mail</span></td><td class="right">48 %</td><td class="right">31</td></tr>
+            <tr><td>Réveil « en sommeil »</td><td><span class="tag">SMS</span></td><td class="right">—</td><td class="right">12</td></tr>
+            <tr><td>Newsletter de juin</td><td><span class="tag teal">E-mail</span></td><td class="right">41 %</td><td class="right">27</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- LANDING (consumer) -->
+    <section class="screen" id="landing">
+      <div class="screen-head"><div><div class="eyebrow">Côté consommateur</div><h2 style="margin:2px 0 0;color:var(--ink)">Landing de scan</h2><p>Ce que voit une personne qui scanne le QR sur une bouteille, en magasin ou au bar.</p></div></div>
+      <div class="phone-wrap">
+        <div class="phone"><div class="screen2">
+          <div class="ph-hero"><div class="kick">Brasserie Nicolas Wicke</div><h2>IPA Houblon Libre</h2><p>Vous venez de scanner cette bière 🍺</p></div>
+          <div class="ph-body" id="phForm">
+            <div class="bottle"><div class="b-ico">🍾</div><div><h4 style="margin:0">IPA Houblon Libre</h4><small class="muted">33 cl · houblons Citra & Mosaic · 6,2%</small></div></div>
+            <h4>Rejoignez le club et gagnez un cadeau</h4>
+            <p class="muted" style="font-size:12px;margin:2px 0 12px">Débloquez du contenu exclusif et des avantages. Sans installer d'application.</p>
+            <div class="ph-field"><label>Votre e-mail</label><input type="email" id="phMail" placeholder="prenom@email.com"></div>
+            <div class="ph-opt"><input type="checkbox" id="o1" checked><div><b style="font-size:12.5px">Rejoindre le programme de fidélité</b></div></div>
+            <div class="ph-opt"><input type="checkbox" id="o2"><div>Recevoir les nouveautés et offres (e-mail)</div></div>
+            <div class="ph-opt"><input type="checkbox" id="o3"><div>Recevoir les préventes par SMS</div></div>
+            <button class="ph-cta" onclick="joinClub()">Rejoindre le club</button>
+            <p class="muted" style="font-size:10.5px;text-align:center;margin-top:10px">Vos données ne sont utilisées que par la brasserie. Désinscription à tout moment.</p>
+          </div>
+          <div class="ph-success" id="phDone">
+            <div class="big"><svg width="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12l5 5L20 6"/></svg></div>
+            <h3 style="margin:0;color:var(--ink)">Bienvenue au club !</h3>
+            <p class="muted" style="font-size:13px">Votre carte est prête. Vous avez déjà gagné vos premiers points pour ce scan.</p>
+            <button class="btn ghost" onclick="resetLanding()">Recommencer la démo</button>
+          </div>
+        </div></div>
+        <div class="flow-note">
+          <div class="eyebrow">Ce qui se passe côté plateforme</div>
+          <h3 style="color:var(--ink);margin:6px 0 16px">Le scan devient un contact</h3>
+          <div class="step"><div class="n">1</div><div><b>Un inconnu scanne</b><br><small class="muted">Une bouteille achetée en magasin, au bar, chez un caviste.</small></div></div>
+          <div class="step"><div class="n">2</div><div><b>Il laisse son e-mail</b><br><small class="muted">Sur cette page hébergée — aucune donnée distributeur nécessaire.</small></div></div>
+          <div class="step"><div class="n">3</div><div><b>La fiche client se crée</b><br><small class="muted">Avec le produit consommé, dans votre base unifiée.</small></div></div>
+          <div class="step"><div class="n">4</div><div><b>Vous pouvez le fidéliser</b><br><small class="muted">Segments, campagnes, ROI — la boucle est bouclée.</small></div></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Drawer client 360 -->
+<div class="drawer-back" id="drawerBack" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="dh"><div><div style="font-size:11px;color:#BCBAEB;letter-spacing:.6px;text-transform:uppercase">Fiche client 360</div><b id="dName">—</b></div><button class="x" onclick="closeDrawer()">✕</button></div>
+  <div class="db" id="dBody"></div>
+</aside>
+
+<div class="modal-back" id="prodBack" onclick="closeProd()"></div>
+<div class="modal" id="prodModal">
+  <div class="mh"><b>Ajouter un produit</b><button class="x" onclick="closeProd()">✕</button></div>
+  <div class="mb">
+    <div class="field"><label>Nom de la bière</label><input type="text" id="npName" placeholder="Ex. Triple des Vosges"></div>
+    <div class="field"><label>Format</label><select id="npFormat"><option>Bouteille 33 cl</option><option>Bouteille 75 cl</option><option>Canette 44 cl</option><option>Fût 20 L</option><option>Autre</option></select></div>
+    <div class="field"><label>GTIN <small>· code-barres GS1 — laissez vide si vous n'en avez pas (un identifiant interne sera utilisé)</small></label><input type="text" id="npGtin" placeholder="3701234500048"></div>
+    <div class="field"><label>Dernier lot <small>· optionnel, pour les QR dynamiques</small></label><input type="text" id="npLot" placeholder="L-2607-A"></div>
+  </div>
+  <div class="mf"><button class="btn ghost" onclick="closeProd()">Annuler</button><button class="btn primary" onclick="addProduct()">Ajouter au catalogue</button></div>
+</div>
+
+<div class="toast" id="toast"><span class="ck"><svg width="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span><span id="toastMsg">Enregistré</span></div>
+
+<script>
+  const titles={dash:'Tableau de bord',clients:'Base client',products:'Produits',qr:'QR Codes',editor:'Personnaliser la landing',campaigns:'Campagnes',loyalty:'Fidélité',landing:'Landing de scan'};
+  function go(s){
+    document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));
+    document.getElementById(s).classList.add('active');
+    document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.s===s));
+    document.getElementById('pageTitle').textContent=titles[s];
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) go(b.dataset.s);});
+
+  // dashboard bars
+  const data=[[22,14],[28,18],[26,22],[35,20],[31,26],[42,24]];
+  const labels=['S-5','S-4','S-3','S-2','S-1','Cette sem.'];
+  const max=60;
+  document.getElementById('dashBars').innerHTML=data.map((d,i)=>`
+    <div class="col"><div class="track">
+      <div class="bar" style="height:${Math.round(d[0]/max*100)}%" title="QR: ${d[0]}"></div>
+      <div class="bar alt" style="height:${Math.round(d[1]/max*100)}%" title="Fidélité: ${d[1]}"></div>
+    </div><div class="m">${labels[i]}</div></div>`).join('');
+
+  // clients data
+  const clients=[
+    {n:'Camille Rousseau',p:'IPA Houblon Libre',s:'Amateurs d\'IPA',sc:7,f:'Club',fc:'green',mail:'camille.r@email.com',since:'Mars 2026',src:'Scan QR (Monoprix)',spend:'96 €'},
+    {n:'Thomas Girard',p:'Stout Minuit',s:'Fidèles (5+ achats)',sc:12,f:'Club',fc:'green',mail:'t.girard@email.com',since:'Janv. 2026',src:'Page fidélité',spend:'184 €'},
+    {n:'Léa Fontaine',p:'Blonde de Comptoir',s:'Clients taproom',sc:4,f:'Membre',fc:'teal',mail:'lea.f@email.com',since:'Avril 2026',src:'Taproom',spend:'52 €'},
+    {n:'Hugo Mercier',p:'Ambrée des Fûts',s:'Découvreurs (1 achat)',sc:1,f:'Prospect',fc:'grey',mail:'hugo.m@email.com',since:'Juil. 2026',src:'Scan QR (caviste)',spend:'8 €'},
+    {n:'Sarah Benali',p:'IPA Houblon Libre',s:'En sommeil',sc:3,f:'Membre',fc:'teal',mail:'s.benali@email.com',since:'Nov. 2025',src:'Scan QR (bar)',spend:'41 €'},
+    {n:'Antoine Lefevre',p:'IPA Houblon Libre',s:'Amateurs d\'IPA',sc:6,f:'Club',fc:'green',mail:'a.lefevre@email.com',since:'Fév. 2026',src:'Événement',spend:'120 €'},
+    {n:'Manon Dupuis',p:'Blonde de Comptoir',s:'En sommeil',sc:2,f:'Prospect',fc:'grey',mail:'manon.d@email.com',since:'Oct. 2025',src:'Scan QR (GMS)',spend:'16 €'},
+  ];
+  function renderClients(){
+    const f=document.getElementById('segFilter').value;
+    document.getElementById('clientRows').innerHTML=clients.filter(c=>!f||c.s===f).map((c,i)=>`
+      <tr onclick='openClient(${clients.indexOf(c)})'>
+        <td><b style="color:var(--ink)">${c.n}</b><br><span class="muted" style="font-size:11.5px">${c.mail}</span></td>
+        <td>${c.p}</td><td><span class="tag">${c.s}</span></td><td class="right">${c.sc}</td>
+        <td><span class="tag ${c.fc}">${c.f}</span></td></tr>`).join('');
+  }
+  function openClient(i){
+    const c=clients[i];
+    document.getElementById('dName').textContent=c.n;
+    document.getElementById('dBody').innerHTML=`
+      <div class="kv"><span>E-mail</span><b>${c.mail}</b></div>
+      <div class="kv"><span>Segment</span><b>${c.s}</b></div>
+      <div class="kv"><span>Statut fidélité</span><b>${c.f}</b></div>
+      <div class="kv"><span>Premier contact</span><b>${c.since}</b></div>
+      <div class="kv"><span>Origine</span><b>${c.src}</b></div>
+      <div class="kv"><span>Scans QR</span><b>${c.sc}</b></div>
+      <div class="kv"><span>Style favori (déduit)</span><b>${c.p.includes('IPA')?'IPA':c.p.includes('Blonde')?'Blonde':c.p.includes('Ambrée')?'Ambrée':c.p.includes('Stout')?'Stout':'—'}</b></div>
+      <div class="kv"><span>Panier moyen</span><b class="muted" style="font-weight:600">—  ·  via POS ou déclaration</b></div>
+      <h4 style="color:var(--ink);margin:18px 0 8px">Activité récente</h4>
+      <div class="timeline">
+        <div class="t"><b>A scanné ${c.p}</b><br><small>il y a 2 jours · ${c.src}</small></div>
+        <div class="t"><b>Ouverture campagne « Préventes »</b><br><small>il y a 1 semaine</small></div>
+        <div class="t"><b>Inscription au club</b><br><small>${c.since}</small></div>
+      </div>`;
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawerBack').classList.add('open');
+  }
+  function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerBack').classList.remove('open');}
+  renderClients();
+
+  // QR generation
+  function genQR(){
+    const grid=document.getElementById('qrGrid'); grid.style.opacity='1';
+    let html=''; const N=21;
+    const finder=(r,c)=> (r<7&&c<7)||(r<7&&c>=N-7)||(r>=N-7&&c<7);
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      let on;
+      if(finder(r,c)){ const rr=r%(N-7), cc=c% (N-7); const lr=r<7?r:r-(N-7), lc=c<7?c:c-(N-7);
+        on = (lr===0||lr===6||lc===0||lc===6||(lr>=2&&lr<=4&&lc>=2&&lc<=4)); }
+      else on = Math.random()>0.52;
+      html+='<i class="'+(on?'':'off')+'"></i>';
+    }
+    grid.innerHTML=html;
+    const prod=document.getElementById('qrProd').value, camp=document.getElementById('qrCamp').value;
+    document.getElementById('qrHolder').querySelector('div:last-child').innerHTML='<b style="color:var(--ink)">'+prod+'</b><br><span style="font-size:12px;color:var(--muted)">Prêt à exporter (PNG / SVG / PDF)</span>';
+    const tb=document.getElementById('qrRows');
+    tb.insertAdjacentHTML('afterbegin','<tr><td>'+prod+'</td><td>'+(camp==='Aucune'?'—':camp)+'</td><td class="right">0</td><td class="right">0</td><td><span class="tag teal">Nouveau</span></td></tr>');
+    toast('QR généré — prêt à imprimer');
+  }
+
+  // loyalty preview
+  function syncLoyalty(){
+    const rule=document.getElementById('ptRule').value; const tier=document.getElementById('tier').value||'0';
+    document.getElementById('pvRule').textContent=rule.charAt(0).toUpperCase()+rule.slice(1)+' · Club à '+tier+' pts';
+    document.getElementById('pvTier').textContent = (128>=+tier)?'Club débloqué':'Membre';
+  }
+  function tog(el){el.classList.toggle('active');}
+
+  // campaigns
+  function launch(){
+    const seg=document.getElementById('cSeg').value; const chan=document.querySelector('input[name=chan]:checked').parentElement.textContent.trim();
+    const tag = chan==='E-mail'?'<span class="tag teal">E-mail</span>':'<span class="tag">SMS</span>';
+    document.getElementById('campRows').insertAdjacentHTML('afterbegin','<tr><td>Campagne — '+seg.split(' (')[0]+'</td><td>'+tag+'</td><td class="right">envoi…</td><td class="right">—</td></tr>');
+    toast('Campagne lancée vers « '+seg.split(' (')[0]+' »');
+  }
+
+  // landing
+  function joinClub(){
+    const m=document.getElementById('phMail').value.trim();
+    if(!m||!m.includes('@')){document.getElementById('phMail').focus(); document.getElementById('phMail').style.borderColor='#e0574f'; return;}
+    document.getElementById('phForm').style.display='none';
+    document.getElementById('phDone').style.display='flex';
+  }
+  function resetLanding(){
+    document.getElementById('phForm').style.display='block';
+    document.getElementById('phDone').style.display='none';
+    document.getElementById('phMail').value=''; document.getElementById('phMail').style.borderColor='';
+  }
+
+  // product creation
+  function openProd(){document.getElementById('prodModal').classList.add('open');document.getElementById('prodBack').classList.add('open');document.getElementById('npName').focus();}
+  function closeProd(){document.getElementById('prodModal').classList.remove('open');document.getElementById('prodBack').classList.remove('open');}
+  function addProduct(){
+    const name=document.getElementById('npName').value.trim()||'Nouvelle bière';
+    const fmt=document.getElementById('npFormat').value;
+    const gtin=document.getElementById('npGtin').value.trim();
+    const lot=document.getElementById('npLot').value.trim();
+    const gcell = gtin ? gtin : '<span class="muted">— (SKU interne)</span>';
+    const status = gtin ? '<span class="tag green">Actif</span>' : '<span class="tag grey">Sans GTIN</span>';
+    const row='<tr><td><b style="color:var(--ink)">'+name+'</b></td><td>'+fmt+'</td><td>'+gcell+'</td><td>'+(lot||'—')+'</td><td class="right">0</td><td>'+status+'</td></tr>';
+    document.getElementById('prodRows').insertAdjacentHTML('afterbegin',row);
+    const sel=document.getElementById('qrProd'); const opt=document.createElement('option');
+    opt.textContent = gtin ? name : name+' (sans GTIN)'; sel.insertBefore(opt, sel.firstChild); sel.value=opt.textContent;
+    closeProd();
+    document.getElementById('npName').value=''; document.getElementById('npGtin').value=''; document.getElementById('npLot').value='';
+    toast('« '+name+' » ajouté au catalogue');
+  }
+
+  // landing editor
+  function shade(hex,amt){let c=hex.replace('#','');if(c.length===3)c=c.split('').map(x=>x+x).join('');const r=Math.max(0,Math.min(255,parseInt(c.substr(0,2),16)+amt));const g=Math.max(0,Math.min(255,parseInt(c.substr(2,2),16)+amt));const b=Math.max(0,Math.min(255,parseInt(c.substr(4,2),16)+amt));return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');}
+  function applyEditor(){
+    const col=document.getElementById('edColor').value;
+    document.getElementById('edKick').textContent=document.getElementById('edName').value;
+    document.getElementById('edPvHead').textContent=document.getElementById('edTitle').value;
+    document.getElementById('edPvMsg').textContent=document.getElementById('edMsg').value;
+    const rw=document.getElementById('edReward').value;
+    const emoji={'Contenu exclusif':'🎁','Réduction boutique':'🏷️','Accès prévente':'⏳','Loterie':'🎟️'}[rw]||'🎁';
+    document.getElementById('edPvReward').textContent=emoji+'  '+rw;
+    document.getElementById('edHero').style.background='linear-gradient(150deg,'+shade(col,-34)+','+col+')';
+    document.getElementById('edCta').style.background=col;
+    document.getElementById('edPvN').style.display=document.getElementById('edN').checked?'flex':'none';
+    document.getElementById('edPvS').style.display=document.getElementById('edS').checked?'flex':'none';
+    document.getElementById('edPvP').style.display=document.getElementById('edP').checked?'flex':'none';
+  }
+  applyEditor();
+
+  // toast
+  let tT;
+  function toast(msg){document.getElementById('toastMsg').textContent=msg; const t=document.getElementById('toast'); t.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),2600);}
+</script>
+</body>
+</html>
