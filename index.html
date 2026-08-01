@@ -247,7 +247,21 @@
   .flow-note b{color:var(--ink)}
 
   @media (max-width:1080px){ .cards-4{grid-template-columns:repeat(2,1fr)} .cards-2{grid-template-columns:1fr} }
-  @media (max-width:760px){ .sidebar{display:none} }
+  .hamburger{display:none; background:transparent;border:0;cursor:pointer;color:var(--ink);width:38px;height:38px;border-radius:9px;align-items:center;justify-content:center;margin-right:2px}
+  .hamburger:hover{background:var(--lav)}
+  .hamburger svg{width:24px;height:24px;stroke-width:2}
+  .sidebar-backdrop{display:none; position:fixed; inset:0; background:rgba(35,35,58,.42); z-index:59}
+  @media (max-width:760px){
+    .sidebar{position:fixed; left:0; top:0; height:100vh; width:80%; max-width:280px; z-index:60; transform:translateX(-100%); transition:transform .28s cubic-bezier(.4,.14,.2,1); box-shadow:8px 0 40px rgba(35,35,58,.28)}
+    .sidebar.open{transform:translateX(0)}
+    .sidebar-backdrop.open{display:block}
+    .hamburger{display:inline-flex}
+    .topbar{padding:0 14px; gap:10px}
+    .topbar h1{font-size:15px}
+    .brewery, .avatar{display:none}
+    .screen{padding:16px}
+    .phone-wrap{gap:20px}
+  }
 
   /* ===== Landing consommateur — thème bière / été (hors charte back-office) ===== */
   .screen2.beach{background:#FBF3DE}
@@ -352,6 +366,7 @@
 </div>
 
 <div class="app" id="appShell" style="display:none">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand demo"><b>Démo SaaS Brasseries</b><span>Données fictives · SaaS statique</span></div>
@@ -372,6 +387,7 @@
   <!-- MAIN -->
   <div class="main">
     <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <h1 id="pageTitle">Tableau de bord</h1>
       <div class="brewery"><span class="dot"></span>Brasserie Nicolas Wicke</div>
       <div class="spacer"></div>
@@ -522,19 +538,26 @@
     <!-- LANDING EDITOR -->
     <section class="screen" id="editor">
       <div class="screen-head">
-        <div><div class="eyebrow">Côté consommateur</div><h2 style="margin:2px 0 0;color:var(--ink)">Personnaliser la landing</h2><p>Réglez l'apparence et le contenu de la page de scan. L'aperçu à droite se met à jour en direct.</p></div>
+        <div><div class="eyebrow">Côté consommateur</div><h2 style="margin:2px 0 0;color:var(--ink)">Personnaliser la landing</h2><p>Réglez l'apparence et le contenu de la page de scan. L'aperçu à droite est identique à la vraie landing, en direct.</p></div>
         <button class="btn primary" onclick="toast('Landing enregistrée')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>Enregistrer</button>
       </div>
       <div class="phone-wrap">
         <div class="card" style="flex:1; min-width:320px; max-width:540px">
-          <h3>Apparence & contenu</h3><div class="sub">Ce que verra le consommateur après le scan.</div>
-          <div class="field"><label>Nom affiché</label><input type="text" id="edName" value="Brasserie Nicolas Wicke" oninput="applyEditor()"></div>
+          <h3>Image principale</h3><div class="sub">Générée par IA à partir de votre description.</div>
+          <div class="field"><label>Décrivez le visuel souhaité</label>
+            <textarea id="edPrompt" rows="2" placeholder="Ex. bière IPA fraîche sur une plage ensoleillée, palmiers, ambiance été">bière IPA fraîche sur une plage ensoleillée, palmiers, ambiance été</textarea></div>
+          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:6px">
+            <button class="btn primary" id="edGenBtn" onclick="genEditorImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M12 3l1.7 4.6L18 9l-4.3 1.4L12 15l-1.7-4.6L6 9l4.3-1.4L12 3z"/><path d="M18.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>Générer l'image</button>
+            <span id="edQuota" style="font-size:12px; color:var(--muted)"></span>
+          </div>
+          <div style="background:#FFF4E6; border:1px solid #FFD9A8; color:#9A5B00; border-radius:10px; padding:9px 12px; font-size:11.5px; margin:4px 0 18px">Chaque génération a un coût d'inférence — d'où une limite mensuelle selon l'offre. Au-delà : +2 €/image ou offre supérieure.</div>
+          <h3>Apparence & contenu</h3><div class="sub" style="margin-bottom:14px">Le reste de la page.</div>
           <div class="row" style="gap:16px">
-            <div class="field" style="flex:0 0 150px"><label>Couleur d'accent</label><input type="color" id="edColor" value="#5742DE" oninput="applyEditor()" style="height:42px;padding:4px"></div>
+            <div class="field" style="flex:0 0 150px"><label>Couleur d'accent</label><input type="color" id="edColor" value="#F5872A" oninput="applyEditor()" style="height:42px;padding:4px"></div>
             <div class="field" style="flex:1"><label>Contrepartie mise en avant</label><select id="edReward" onchange="applyEditor()"><option>Contenu exclusif</option><option>Réduction boutique</option><option>Accès prévente</option><option>Loterie</option></select></div>
           </div>
-          <div class="field"><label>Titre d'accroche</label><input type="text" id="edTitle" value="Rejoignez le club et gagnez un cadeau" oninput="applyEditor()"></div>
-          <div class="field"><label>Message</label><textarea id="edMsg" rows="2" oninput="applyEditor()">Débloquez du contenu exclusif et des avantages. Sans installer d'application.</textarea></div>
+          <div class="field"><label>Titre d'accroche</label><input type="text" id="edTitle" value="Rejoignez le club de l'été" oninput="applyEditor()"></div>
+          <div class="field"><label>Message</label><textarea id="edMsg" rows="2" oninput="applyEditor()">Contenu exclusif, préventes et avantages — sans installer d'application.</textarea></div>
           <div class="field"><label>Opt-ins proposés</label>
             <div class="opt"><div><b>Programme de fidélité</b><br><small>Toujours affiché</small></div><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></div>
             <div class="opt"><div><b>Newsletter (e-mail)</b></div><label class="switch"><input type="checkbox" id="edN" checked onchange="applyEditor()"><span class="slider"></span></label></div>
@@ -545,19 +568,20 @@
             <b style="color:var(--ink)">Perso. avancée à venir :</b> adapter la page selon le produit, l'heure ou la géolocalisation (IA) — prévu en priorité 2 au CDC.
           </div>
         </div>
-        <div class="phone"><div class="screen2">
-          <div class="ph-hero" id="edHero"><div class="kick" id="edKick">Brasserie Nicolas Wicke</div><h2>IPA Houblon Libre</h2><p>Vous venez de scanner cette bière</p></div>
-          <div class="ph-body">
-            <div class="bottle"><div class="b-ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E08A1E" stroke-width="1.7" stroke-linejoin="round"><path d="M6 7h10v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7z"/><path d="M16 9h2.5A1.5 1.5 0 0 1 20 10.5v3A1.5 1.5 0 0 1 18.5 15H16"/><path d="M8 7V6M11 7V5.5M14 7V6"/></svg></div><div><h4 style="margin:0">IPA Houblon Libre</h4><small class="muted">33 cl · Citra & Mosaic · 6,2%</small></div></div>
-            <h4 id="edPvHead">Rejoignez le club et gagnez un cadeau</h4>
-            <p class="muted" id="edPvMsg" style="font-size:12px;margin:2px 0 10px">Débloquez du contenu exclusif et des avantages. Sans installer d'application.</p>
-            <div style="margin-bottom:12px"><span class="tag" id="edPvReward">Contenu exclusif</span></div>
-            <div class="ph-field"><label>Votre e-mail</label><input type="email" placeholder="prenom@email.com"></div>
-            <div class="ph-opt"><input type="checkbox" checked><div><b style="font-size:12.5px">Rejoindre le programme de fidélité</b></div></div>
-            <div class="ph-opt" id="edPvN"><input type="checkbox"><div>Recevoir les nouveautés et offres (e-mail)</div></div>
-            <div class="ph-opt" id="edPvS" style="display:none"><input type="checkbox"><div>Recevoir les préventes par SMS</div></div>
-            <div class="ph-opt" id="edPvP" style="display:none"><input type="checkbox"><div>Personnaliser mes recommandations</div></div>
-            <button class="ph-cta" id="edCta">Rejoindre le club</button>
+        <div class="phone"><div class="screen2 beach">
+          <img class="beach-hero" id="edBanner" alt="Visuel de la landing">
+          <div class="beach-sub">Édition limitée de l'été — vous venez de la scanner !</div>
+          <div class="ph-body beach-body">
+            <div class="beach-bottle"><span class="bb"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E08A1E" stroke-width="1.7" stroke-linejoin="round"><path d="M6 7h10v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7z"/><path d="M16 9h2.5A1.5 1.5 0 0 1 20 10.5v3A1.5 1.5 0 0 1 18.5 15H16"/><path d="M8 7V6M11 7V5.5M14 7V6"/></svg></span><div><b>IPA Houblon Libre</b><small>33 cl · Citra & Mosaic · 6,2% · notes tropicales</small></div></div>
+            <span class="beach-chip" id="edPvReward"></span>
+            <h4 id="edPvHead">Rejoignez le club de l'été</h4>
+            <p class="lead" id="edPvMsg">Contenu exclusif, préventes et avantages — sans installer d'application.</p>
+            <div class="beach-field"><label>Votre e-mail</label><input type="email" placeholder="prenom@email.com"></div>
+            <div class="beach-opt"><input type="checkbox" checked><div><b style="color:#0E6FB0">Rejoindre le programme de fidélité</b></div></div>
+            <div class="beach-opt" id="edPvN"><input type="checkbox"><div>Recevoir les nouveautés et offres (e-mail)</div></div>
+            <div class="beach-opt" id="edPvS" style="display:none"><input type="checkbox"><div>Recevoir les préventes par SMS</div></div>
+            <div class="beach-opt" id="edPvP" style="display:none"><input type="checkbox"><div>Personnaliser mes recommandations</div></div>
+            <button class="beach-cta" id="edCta">Rejoindre le club</button>
           </div>
         </div></div>
       </div>
@@ -654,7 +678,7 @@
 
 <script>
   const titles={dash:'Tableau de bord',clients:'Base client',products:'Produits',qr:'QR Codes',editor:'Personnaliser la landing',campaigns:'Campagnes',loyalty:'Fidélité',landing:'Landing de scan'};
-  function enterApp(){document.getElementById('home').style.display='none'; document.getElementById('appShell').style.display='flex'; go('dash'); window.scrollTo(0,0);}
+  function enterApp(){document.getElementById('home').style.display='none'; document.getElementById('appShell').style.display='flex'; go('dash'); if(typeof toggleSidebar==='function')toggleSidebar(false); window.scrollTo(0,0);}
   function showHome(){document.getElementById('appShell').style.display='none'; document.getElementById('home').style.display='block'; window.scrollTo(0,0);}
   function scrollTo2(id){const e=document.getElementById(id); if(e) e.scrollIntoView({behavior:'smooth'});}
   function go(s){
@@ -664,7 +688,8 @@
     document.getElementById('pageTitle').textContent=titles[s];
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) go(b.dataset.s);});
+  document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b){go(b.dataset.s); toggleSidebar(false);}});
+  function toggleSidebar(force){var sb=document.querySelector('.sidebar'),bd=document.getElementById('sidebarBackdrop');var open=(typeof force==='boolean')?force:!sb.classList.contains('open');sb.classList.toggle('open',open);if(bd)bd.classList.toggle('open',open);}
 
   // dashboard bars
   const data=[[22,14],[28,18],[26,22],[35,20],[31,26],[42,24]];
@@ -786,22 +811,23 @@
     toast('« '+name+' » ajouté au catalogue');
   }
 
-  // landing editor
-  function shade(hex,amt){let c=hex.replace('#','');if(c.length===3)c=c.split('').map(x=>x+x).join('');const r=Math.max(0,Math.min(255,parseInt(c.substr(0,2),16)+amt));const g=Math.max(0,Math.min(255,parseInt(c.substr(2,2),16)+amt));const b=Math.max(0,Math.min(255,parseInt(c.substr(4,2),16)+amt));return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');}
+  // landing editor (aperçu = vraie landing de scan)
+  var GIFTJS="<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#0E6FB0\" stroke-width=\"2\" style=\"vertical-align:-2px;margin-right:6px\"><rect x=\"3\" y=\"9\" width=\"18\" height=\"12\" rx=\"1\"/><path d=\"M3 13h18M12 9v12\"/><path d=\"M12 9C10 9 8.3 8.2 8.3 6.4 8.3 5.3 9.1 4.8 10 4.8c1.6 0 2 2.3 2 4.2zM12 9c2 0 3.7-.8 3.7-2.6 0-1.1-.8-1.6-1.7-1.6-1.6 0-2 2.3-2 4.2z\"/></svg>";
+  var edGenLeft=3;
+  function shade(hex,amt){var c=hex.replace("#","");if(c.length===3)c=c.split("").map(function(x){return x+x}).join("");var r=Math.max(0,Math.min(255,parseInt(c.substr(0,2),16)+amt));var g=Math.max(0,Math.min(255,parseInt(c.substr(2,2),16)+amt));var b=Math.max(0,Math.min(255,parseInt(c.substr(4,2),16)+amt));return "#"+[r,g,b].map(function(x){return x.toString(16).padStart(2,"0")}).join("");}
   function applyEditor(){
-    const col=document.getElementById('edColor').value;
-    document.getElementById('edKick').textContent=document.getElementById('edName').value;
-    document.getElementById('edPvHead').textContent=document.getElementById('edTitle').value;
-    document.getElementById('edPvMsg').textContent=document.getElementById('edMsg').value;
-    const rw=document.getElementById('edReward').value;
-    document.getElementById('edPvReward').textContent=rw;
-    document.getElementById('edHero').style.background='linear-gradient(150deg,'+shade(col,-34)+','+col+')';
-    document.getElementById('edCta').style.background=col;
-    document.getElementById('edPvN').style.display=document.getElementById('edN').checked?'flex':'none';
-    document.getElementById('edPvS').style.display=document.getElementById('edS').checked?'flex':'none';
-    document.getElementById('edPvP').style.display=document.getElementById('edP').checked?'flex':'none';
+    var col=document.getElementById("edColor").value;
+    document.getElementById("edPvHead").textContent=document.getElementById("edTitle").value;
+    document.getElementById("edPvMsg").textContent=document.getElementById("edMsg").value;
+    document.getElementById("edPvReward").innerHTML=GIFTJS+document.getElementById("edReward").value;
+    document.getElementById("edCta").style.background="linear-gradient(90deg,"+col+","+shade(col,-34)+")";
+    document.getElementById("edPvN").style.display=document.getElementById("edN").checked?"flex":"none";
+    document.getElementById("edPvS").style.display=document.getElementById("edS").checked?"flex":"none";
+    document.getElementById("edPvP").style.display=document.getElementById("edP").checked?"flex":"none";
   }
-  applyEditor();
+  function updateQuota(){var q=document.getElementById("edQuota"),btn=document.getElementById("edGenBtn");if(edGenLeft<=0){q.innerHTML="<b style=\"color:#b45309\">Limite mensuelle atteinte (5/5)</b>";btn.disabled=true;btn.style.opacity="0.5";btn.style.cursor="not-allowed";}else{q.textContent=edGenLeft+" génération"+(edGenLeft>1?"s":"")+" restante"+(edGenLeft>1?"s":"")+" ce mois · offre Brasserie (5 / mois)";}}
+  function genEditorImage(){var p=document.getElementById("edPrompt").value.trim();if(!p){document.getElementById("edPrompt").focus();return;}if(edGenLeft<=0){toast("Limite mensuelle atteinte");return;}var b=document.getElementById("edBanner"),btn=document.getElementById("edGenBtn");btn.disabled=true;btn.textContent="Génération…";b.style.transition="opacity .3s";b.style.opacity="0.2";setTimeout(function(){b.style.opacity="1";btn.disabled=false;btn.innerHTML="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\" style=\"vertical-align:-3px;margin-right:6px\"><path d=\"M12 3l1.7 4.6L18 9l-4.3 1.4L12 15l-1.7-4.6L6 9l4.3-1.4L12 3z\"/><path d=\"M18.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z\"/></svg>Générer l'image";edGenLeft--;updateQuota();toast("Image générée à partir de votre description");},1100);}
+  (function(){var lb=document.querySelector("#landing .beach-hero"),eb=document.getElementById("edBanner");if(lb&&eb)eb.src=lb.src;updateQuota();applyEditor();})();
 
   // toast
   let tT;
